@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="description" content="REVO STORE — Streetwear de alta gama. Prendas sin exceso. Solo estilo. Custom wear, drops limitados y diseño honesto hecho en Madrid.">
+<meta property="og:title" content="REVO STORE ✦ — Prendas sin exceso. Solo estilo.">
+<meta property="og:description" content="Custom wear urbano, ediciones limitadas y visor 3D interactivo. Drop 2026 disponible.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✦</text></svg>">
+
+<!-- ═══ 1 · CDNs EXACTOS: Fuentes + Tailwind + GSAP + Lenis + Lucide + Three ═══ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#0A0A0A', asphalt:'#171717', carbon:'#222222', bone:'#F5F5F7', fog:'#E5E5E5', line:'#2A2A2A' },
+    fontFamily: { display:['Syne','ui-sans-serif','sans-serif'], body:['Inter','ui-sans-serif','sans-serif'], mono:['"Space Mono"','ui-monospace','monospace'] },
+    letterSpacing: { mega:'-0.06em', tech:'0.35em' }, borderRadius: { card:'1.75rem' }
+  } } };
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+
+<style>
+  /* ═══ CSS CUSTOM: marquee, noise, outline, steps, comparador, scrollbar ═══ */
+  html { scroll-behavior: auto; }
+  body.no-scroll { overflow: hidden; }
+  ::selection { background:#0A0A0A; color:#F5F5F7; }
+  ::-webkit-scrollbar { width:10px; }
+  ::-webkit-scrollbar-track { background:#F5F5F7; }
+  ::-webkit-scrollbar-thumb { background:#0A0A0A; border:3px solid #F5F5F7; border-radius:8px; }
+
+  .noise { position:fixed; inset:0; z-index:99; pointer-events:none; opacity:.06;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2"/></filter><rect width="160" height="160" filter="url(%23n)" opacity="0.7"/></svg>'); }
+
+  @keyframes marquee { to { transform: translate3d(-50%,0,0); } }
+  .marquee-track { animation: marquee 24s linear infinite; will-change: transform; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+
+  .text-outline { -webkit-text-stroke: 1.5px rgba(10,10,10,.30); color: transparent; }
+  .text-outline-bone { -webkit-text-stroke: 1px rgba(245,245,247,.25); color: transparent; }
+
+  .scrolly-step { position:absolute; bottom:12%; left:6%; max-width:340px; opacity:0; transform:translateY(28px); transition:opacity .5s ease, transform .5s ease; pointer-events:none; }
+  .scrolly-step.pos-r { left:auto; right:6%; text-align:right; }
+  .scrolly-step.is-active { opacity:1; transform:none; }
+  .scrolly-step.is-active .cta-step { pointer-events:auto; }
+
+  #ba-wrap .ba-after { clip-path: inset(0 0 0 var(--pos,50%)); }
+  #ba-wrap .ba-handle { left: var(--pos,50%); }
+
+  .swatch.is-active { outline:2px solid #0A0A0A; outline-offset:2px; }
+  .size-btn.is-active { background:#0A0A0A; color:#F5F5F7; border-color:#0A0A0A; }
+
+  #cart-drawer, #mobile-menu, #cart-overlay { will-change: transform, opacity; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track { animation: none; }
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+
+<body class="bg-bone font-body text-ink antialiased">
+
+<!-- ═══ LOADER ═══ -->
+<div id="loader" class="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-ink text-bone">
+  <p class="font-display text-3xl font-extrabold uppercase tracking-mega">REVO STORE ✦</p>
+  <p id="loader-pct" class="font-mono text-xs text-bone/60">0%</p>
+  <p class="font-mono text-[10px] tracking-tech text-bone/40">[ CARGANDO DROP 2026 ]</p>
+</div>
+
+<!-- ═══ OVERLAY DE GRANO ═══ -->
+<div class="noise" aria-hidden="true"></div>
+
+<!-- ═══ NAVBAR ═══ -->
+<header id="navbar" class="fixed inset-x-0 top-0 z-[60] border-b border-fog bg-bone/80 backdrop-blur">
+  <div class="mx-auto flex h-16 max-w-[1600px] items-center gap-5 px-4 md:px-6">
+    <a href="#hero" class="font-display text-lg font-extrabold uppercase tracking-mega">REVO STORE ✦</a>
+    <nav class="hidden gap-6 font-mono text-xs uppercase md:flex" aria-label="Navegación principal">
+      <a href="#hero" class="hover:underline underline-offset-4">Inicio</a>
+      <a href="#bestsellers" class="hover:underline underline-offset-4">Catálogo</a>
+      <a href="#custom" class="hover:underline underline-offset-4">Custom</a>
+      <a href="#nosotros" class="hover:underline underline-offset-4">Nosotros</a>
+      <a href="#contacto" class="hover:underline underline-offset-4">Contacto</a>
+    </nav>
+    <div class="ml-auto flex items-center gap-3">
+      <span class="hidden font-mono text-[10px] text-ink/50 lg:block">account id — revo-001</span>
+      <div class="relative hidden md:block">
+        <input id="search-input" type="search" placeholder="buscar prenda…" aria-label="Buscar prenda"
+          class="w-44 rounded-full border border-fog bg-white px-4 py-2 font-mono text-xs placeholder:text-ink/40 focus:border-ink focus:outline-none">
+      </div>
+      <button id="cart-open" data-magnetic aria-label="Abrir cesta" class="relative grid h-10 w-10 place-items-center rounded-full bg-ink text-bone">
+        <i data-lucide="shopping-bag" class="h-4 w-4"></i>
+        <span id="cart-count" class="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full border border-bone bg-ink px-1 font-mono text-[10px]">0</span>
+      </button>
+      <button id="menu-open" aria-label="Abrir menú" class="grid h-10 w-10 place-items-center rounded-full border border-fog md:hidden">
+        <i data-lucide="menu" class="h-5 w-5"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ MENÚ MOBILE FULLSCREEN ═══ -->
+<div id="mobile-menu" class="fixed inset-0 z-[75] -translate-y-full bg-ink text-bone transition-transform duration-500 md:hidden">
+  <div class="flex h-16 items-center justify-between px-4">
+    <span class="font-display text-lg font-extrabold uppercase">REVO STORE ✦</span>
+    <button id="menu-close" aria-label="Cerrar menú" class="grid h-10 w-10 place-items-center rounded-full border border-line"><i data-lucide="x" class="h-5 w-5"></i></button>
+  </div>
+  <nav class="flex flex-col gap-2 px-6 pt-10 font-display text-4xl font-extrabold uppercase tracking-mega" aria-label="Navegación móvil">
+    <a href="#hero" class="py-2">Inicio</a>
+    <a href="#bestsellers" class="py-2">Catálogo</a>
+    <a href="#custom" class="py-2">Custom</a>
+    <a href="#nosotros" class="py-2">Nosotros</a>
+    <a href="#contacto" class="py-2">Contacto</a>
+  </nav>
+  <p class="absolute bottom-8 left-6 font-mono text-[10px] tracking-tech text-bone/40">[ 001 ] — REVO STORE © 2026</p>
+</div>
+
+<main>
+<!-- ═══ HERO (R1: palabra gigante partida + modelo + callout + visor 3D) ═══ -->
+<section id="hero" class="mx-3 mt-20 overflow-hidden rounded-card border border-fog bg-bone md:mx-6 md:mt-24">
+  <div class="relative h-[62vh] min-h-[480px] md:h-[72vh]">
+    <!-- Capa de texto sólido (detrás del modelo) -->
+    <h1 class="absolute inset-x-0 top-[10%] z-0 flex select-none justify-between px-[3%] font-display text-[16vw] font-extrabold uppercase leading-none tracking-mega">
+      <span>REVO</span><span>STORE</span>
+    </h1>
+    <!-- Modelo recortado con parallax -->
+    <div data-speed="0.9" class="absolute inset-0 z-10 flex justify-center">
+      <img src="https://images.unsplash.com/photo-1520975954732-35dd22299614?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" fetchpriority="high"
+        alt="Modelo con hoodie oversized REVO" class="h-[94%] object-contain mix-blend-multiply drop-shadow-[0_30px_40px_rgba(0,0,0,0.3)]"
+        onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+    </div>
+    <!-- Duplicado outline por delante (profundidad volumétrica) -->
+    <div data-speed="0.7" class="pointer-events-none absolute inset-0 z-20" aria-hidden="true">
+      <div class="text-outline absolute inset-x-0 top-[14%] flex justify-between px-[3%] font-display text-[16vw] font-extrabold uppercase leading-none tracking-mega">
+        <span>REVO</span><span>STORE</span>
+      </div>
+    </div>
+    <span class="absolute left-4 top-4 z-20 font-mono text-[10px] text-ink/50">[ 001 ]</span>
+    <span class="absolute right-4 top-4 z-20 font-mono text-[10px] text-ink/50">© 2026 — MADRID</span>
+  </div>
+
+  <div class="relative z-30 grid gap-4 border-t border-fog p-4 md:grid-cols-3 md:p-6">
+    <!-- Lema + CTA -->
+    <div class="flex flex-col justify-between gap-6">
+      <div>
+        <p class="font-display text-2xl font-extrabold uppercase leading-tight md:text-3xl">Prendas sin exceso. Solo estilo.</p>
+        <p class="mt-3 max-w-sm text-sm text-ink/60">Siluetas modernas, textiles premium y diseño honesto. Para quienes eligen simplicidad y calidad.</p>
+      </div>
+      <a href="#bestsellers" data-magnetic class="inline-flex w-fit items-center gap-2 rounded-full bg-ink px-6 py-3 font-mono text-xs uppercase tracking-tech text-bone">
+        Explorar catálogo [ ↓ ]
+      </a>
+    </div>
+    <!-- Visor 3D -->
+    <div class="rounded-card border border-fog bg-white p-4">
+      <p class="mb-3 flex items-center justify-between font-mono text-[10px] uppercase tracking-tech text-ink/50">
+        <span>Visor 3D — arrastra para rotar</span><span>[ WEBGL ]</span>
+      </p>
+      <div id="hero-3d" class="h-56 w-full cursor-grab active:cursor-grabbing md:h-64"></div>
+    </div>
+    <!-- Callout de producto (R1) -->
+    <div class="flex flex-col justify-between rounded-card border border-fog bg-white p-4">
+      <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy"
+        alt="REVO Hoodie edición 2026" class="h-32 w-full rounded-2xl object-cover"
+        onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <div class="mt-4 flex items-center justify-between font-mono text-xs">
+        <span class="font-bold uppercase">REVO HOODIE — 129 €</span><span class="text-ink/50">2026</span>
+      </div>
+      <a href="#custom" class="mt-3 inline-flex w-fit items-center gap-1 rounded-full border border-ink px-4 py-2 font-mono text-xs uppercase hover:bg-ink hover:text-bone">Ver Drop ↗</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TICKER 1 ═══ -->
+<div class="marquee mt-6 overflow-hidden border-y border-fog bg-white py-3">
+  <div class="marquee-track flex whitespace-nowrap font-mono text-xs uppercase tracking-tech">
+    <span class="pr-8">REVO STORE — NUEVA COLECCIÓN — CUSTOM WEAR — 2026 — EDICIÓN LIMITADA — REVO STORE — NUEVA COLECCIÓN — CUSTOM WEAR — 2026 — EDICIÓN LIMITADA —&nbsp;</span>
+    <span class="pr-8" aria-hidden="true">REVO STORE — NUEVA COLECCIÓN — CUSTOM WEAR — 2026 — EDICIÓN LIMITADA — REVO STORE — NUEVA COLECCIÓN — CUSTOM WEAR — 2026 — EDICIÓN LIMITADA —&nbsp;</span>
+  </div>
+</div>
+
+<!-- ═══ SCROLLYTELLING CANVAS: THE REVO HOODIE ═══ -->
+<section id="scrolly" class="relative h-screen overflow-hidden bg-ink text-bone">
+  <canvas id="scrolly-canvas" class="absolute inset-0 h-full w-full"></canvas>
+  <div id="frame-hud" class="absolute left-4 top-4 z-10 font-mono text-[10px] text-bone/60">FRAME 000/120 — 0%</div>
+  <div class="absolute left-1/2 top-6 z-10 -translate-x-1/2 text-center">
+    <p class="font-mono text-[10px] tracking-tech text-bone/50">[ DESPIECE TÉCNICO ]</p>
+    <h2 class="font-display text-2xl font-extrabold uppercase tracking-mega md:text-4xl">THE REVO HOODIE</h2>
+  </div>
+  <div id="scrolly-bar" class="absolute bottom-0 left-0 z-10 h-[2px] bg-bone" style="width:0%"></div>
+
+  <div class="scrolly-step" data-step="0">
+    <p class="font-mono text-[10px] tracking-tech text-bone/50">[ FASE 01 ]</p>
+    <h3 class="font-display text-xl font-extrabold uppercase">Silueta</h3>
+    <p class="mt-2 text-sm text-bone/70">Base oversized de 480 g/m². Corte boxy, hombro caído y patrón propio. Giro 360° — sigue haciendo scroll.</p>
+  </div>
+  <div class="scrolly-step pos-r" data-step="1">
+    <p class="font-mono text-[10px] tracking-tech text-bone/50">[ FASE 02 ]</p>
+    <h3 class="font-display text-xl font-extrabold uppercase">Despiece</h3>
+    <p class="mt-2 text-sm text-bone/70">Cada panel se corta a mano en nuestro taller de Madrid. Capucha doble, costuras selladas, bolsillo canguro reforzado.</p>
+  </div>
+  <div class="scrolly-step" data-step="2">
+    <p class="font-mono text-[10px] tracking-tech text-bone/50">[ FASE 03 ]</p>
+    <h3 class="font-display text-xl font-extrabold uppercase">Custom</h3>
+    <p class="mt-2 text-sm text-bone/70">Serigrafía gótica REVO✦ aplicada por artistas locales. Elige tu paleta: ninguna prenda es igual a otra.</p>
+  </div>
+  <div class="scrolly-step pos-r" data-step="3">
+    <p class="font-mono text-[10px] tracking-tech text-bone/50">[ FASE 04 ]</p>
+    <h3 class="font-display text-xl font-extrabold uppercase">Ensamblaje</h3>
+    <p class="mt-2 text-sm text-bone/70">Montaje final, control de calidad pieza a pieza y etiquetado con lote único [ 003.201 ].</p>
+  </div>
+  <div class="scrolly-step" data-step="4">
+    <p class="font-mono text-[10px] tracking-tech text-bone/50">[ FASE 05 ]</p>
+    <h3 class="font-display text-xl font-extrabold uppercase">Drop</h3>
+    <p class="mt-2 text-sm text-bone/70">Edición limitada a 120 unidades. Cuando se acaba, no vuelve.</p>
+    <a href="#bestsellers" class="cta-step mt-4 inline-flex items-center gap-2 rounded-full bg-bone px-6 py-3 font-mono text-xs uppercase tracking-tech text-ink">Reservar ahora ↗</a>
+  </div>
+</section>
+
+<!-- ═══ BESTSELLERS · BENTO GRID (R2) ═══ -->
+<section id="bestsellers" class="relative mx-3 py-16 md:mx-6 md:py-24">
+  <span class="pointer-events-none absolute -left-2 top-24 hidden rotate-180 font-mono text-xs tracking-tech text-ink/30 [writing-mode:vertical-rl] xl:block">REVO BESTSELLER ✦ REVO BESTSELLER ✦</span>
+  <div class="flex flex-wrap items-end justify-between gap-4">
+    <h2 class="font-display text-4xl font-extrabold uppercase tracking-mega md:text-6xl">Bestsellers</h2>
+    <p class="font-mono text-[10px] tracking-tech text-ink/50">[ 002 ] — PIEZAS MÁS VENDIDAS DEL DROP</p>
+  </div>
+
+  <div class="mt-10 grid grid-cols-2 gap-3 md:grid-cols-4">
+    <!-- CARD 1 · GRANDE -->
+    <article class="product-card group col-span-2 flex flex-col rounded-card border border-fog bg-white p-4 md:col-span-2 md:row-span-2" data-id="001" data-name="Custom Cargo Pants" data-price="129">
+      <div class="relative overflow-hidden rounded-2xl bg-fog">
+        <img class="product-img aspect-[4/5] w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy" alt="Custom Cargo Pants"
+          src="https://images.unsplash.com/photo-1541099649105-5022d0117edd?q=80&amp;w=1200&amp;auto=format&amp;fit=crop"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+        <span class="absolute left-3 top-3 rounded-full bg-ink px-2 py-1 font-mono text-[10px] text-bone">[ REV-001 ]</span>
+      </div>
+      <div class="mt-4 flex items-baseline justify-between gap-2">
+        <h3 class="font-display text-lg font-extrabold uppercase">Custom Cargo Pants</h3>
+        <span class="font-mono text-sm">129 €</span>
+      </div>
+      <div class="mt-3 flex items-center gap-2" role="group" aria-label="Colores">
+        <button class="swatch is-active h-6 w-6 rounded-full border border-ink/20" style="background:#0A0A0A" data-color="negro" aria-label="Color negro"></button>
+        <button class="swatch h-6 w-6 rounded-full border border-ink/20" style="background:#9CA3AF" data-color="humo" aria-label="Color humo"></button>
+        <button class="swatch h-6 w-6 rounded-full border border-ink/20" style="background:#F5F5F7" data-color="hueso" aria-label="Color hueso"></button>
+        <button class="swatch h-6 w-6 rounded-full border border-ink/20" style="background:#5B6147" data-color="oliva" aria-label="Color oliva"></button>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Tallas">
+        <button class="size-btn rounded-full border border-fog px-3 py-1 font-mono text-xs" data-size="S">S</button>
+        <button class="size-btn is-active rounded-full border border-fog px-3 py-1 font-mono text-xs" data-size="M">M</button>
+        <button class="size-btn rounded-full border border-fog px-3 py-1 font-mono text-xs" data-size="L">L</button>
+        <button class="size-btn rounded-full border border-fog px-3 py-1 font-mono text-xs" data-size="XL">XL</button>
+      </div>
+      <button class="add-btn mt-4 rounded-full bg-ink py-3 font-mono text-xs uppercase tracking-tech text-bone hover:opacity-80">Comprar Ahora</button>
+    </article>
+
+    <!-- CARD 2 -->
+    <article class="product-card group col-span-1 flex flex-col rounded-card border border-fog bg-white p-4" data-id="002" data-name="Oversized Tee Revo Gothic" data-price="49">
+      <div class="relative overflow-hidden rounded-2xl bg-fog">
+        <img class="product-img aspect-square w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy" alt="Oversized Tee Revo Gothic"
+          src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?q=80&amp;w=1200&amp;auto=format&amp;fit=crop"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+        <span class="absolute left-3 top-3 rounded-full bg-ink px-2 py-1 font-mono text-[10px] text-bone">[ REV-002 ]</span>
+      </div>
+      <div class="mt-3 flex items-baseline justify-between gap-2">
+        <h3 class="font-display text-sm font-extrabold uppercase">Oversized Tee “Revo Gothic”</h3>
+        <span class="font-mono text-xs">49 €</span>
+      </div>
+      <div class="mt-2 flex items-center gap-2" role="group" aria-label="Colores">
+        <button class="swatch is-active h-5 w-5 rounded-full border border-ink/20" style="background:#0A0A0A" data-color="negro" aria-label="Color negro"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#9CA3AF" data-color="humo" aria-label="Color humo"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#F5F5F7" data-color="hueso" aria-label="Color hueso"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#5B6147" data-color="oliva" aria-label="Color oliva"></button>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Tallas">
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="S">S</button>
+        <button class="size-btn is-active rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="M">M</button>
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="L">L</button>
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="XL">XL</button>
+      </div>
+      <button class="add-btn mt-3 rounded-full bg-ink py-2.5 font-mono text-[10px] uppercase tracking-tech text-bone hover:opacity-80">Comprar Ahora</button>
+    </article>
+
+    <!-- CARD 3 -->
+    <article class="product-card group col-span-1 flex flex-col rounded-card border border-fog bg-white p-4" data-id="003" data-name="Leather Bomber Asfalto" data-price="289">
+      <div class="relative overflow-hidden rounded-2xl bg-fog">
+        <img class="product-img aspect-square w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy" alt="Leather Bomber Asfalto"
+          src="https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&amp;w=1200&amp;auto=format&amp;fit=crop"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+        <span class="absolute left-3 top-3 rounded-full bg-ink px-2 py-1 font-mono text-[10px] text-bone">[ REV-003 ]</span>
+      </div>
+      <div class="mt-3 flex items-baseline justify-between gap-2">
+        <h3 class="font-display text-sm font-extrabold uppercase">Leather Bomber “Asfalto”</h3>
+        <span class="font-mono text-xs">289 €</span>
+      </div>
+      <div class="mt-2 flex items-center gap-2" role="group" aria-label="Colores">
+        <button class="swatch is-active h-5 w-5 rounded-full border border-ink/20" style="background:#0A0A0A" data-color="negro" aria-label="Color negro"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#9CA3AF" data-color="humo" aria-label="Color humo"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#F5F5F7" data-color="hueso" aria-label="Color hueso"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#5B6147" data-color="oliva" aria-label="Color oliva"></button>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Tallas">
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="S">S</button>
+        <button class="size-btn is-active rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="M">M</button>
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="L">L</button>
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="XL">XL</button>
+      </div>
+      <button class="add-btn mt-3 rounded-full bg-ink py-2.5 font-mono text-[10px] uppercase tracking-tech text-bone hover:opacity-80">Comprar Ahora</button>
+    </article>
+
+    <!-- CARD 4 -->
+    <article class="product-card group col-span-1 flex flex-col rounded-card border border-fog bg-white p-4" data-id="004" data-name="Cardholder ID-001" data-price="39">
+      <div class="relative overflow-hidden rounded-2xl bg-fog">
+        <img class="product-img aspect-square w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy" alt="Cardholder ID-001"
+          src="https://images.unsplash.com/photo-1627123424574-724758594e93?q=80&amp;w=1200&amp;auto=format&amp;fit=crop"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+        <span class="absolute left-3 top-3 rounded-full bg-ink px-2 py-1 font-mono text-[10px] text-bone">[ REV-004 ]</span>
+      </div>
+      <div class="mt-3 flex items-baseline justify-between gap-2">
+        <h3 class="font-display text-sm font-extrabold uppercase">Cardholder “ID-001”</h3>
+        <span class="font-mono text-xs">39 €</span>
+      </div>
+      <div class="mt-2 flex items-center gap-2" role="group" aria-label="Colores">
+        <button class="swatch is-active h-5 w-5 rounded-full border border-ink/20" style="background:#0A0A0A" data-color="negro" aria-label="Color negro"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#9CA3AF" data-color="humo" aria-label="Color humo"></button>
+      </div>
+      <div class="mt-2 flex gap-1.5" role="group" aria-label="Talla">
+        <button class="size-btn is-active rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="ÚNICA">ÚNICA</button>
+      </div>
+      <button class="add-btn mt-3 rounded-full bg-ink py-2.5 font-mono text-[10px] uppercase tracking-tech text-bone hover:opacity-80">Comprar Ahora</button>
+    </article>
+
+    <!-- CARD 5 -->
+    <article class="product-card group col-span-1 flex flex-col rounded-card border border-fog bg-white p-4" data-id="005" data-name="Sneakers Revo Low" data-price="159">
+      <div class="relative overflow-hidden rounded-2xl bg-fog">
+        <img class="product-img aspect-square w-full object-cover transition duration-700 group-hover:scale-105" loading="lazy" alt="Sneakers Revo Low"
+          src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?q=80&amp;w=1200&amp;auto=format&amp;fit=crop"
+          onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+        <span class="absolute left-3 top-3 rounded-full bg-ink px-2 py-1 font-mono text-[10px] text-bone">[ REV-005 ]</span>
+      </div>
+      <div class="mt-3 flex items-baseline justify-between gap-2">
+        <h3 class="font-display text-sm font-extrabold uppercase">Sneakers “Revo Low”</h3>
+        <span class="font-mono text-xs">159 €</span>
+      </div>
+      <div class="mt-2 flex items-center gap-2" role="group" aria-label="Colores">
+        <button class="swatch is-active h-5 w-5 rounded-full border border-ink/20" style="background:#0A0A0A" data-color="negro" aria-label="Color negro"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#F5F5F7" data-color="hueso" aria-label="Color hueso"></button>
+        <button class="swatch h-5 w-5 rounded-full border border-ink/20" style="background:#9CA3AF" data-color="humo" aria-label="Color humo"></button>
+      </div>
+      <div class="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Tallas">
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="S">S</button>
+        <button class="size-btn is-active rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="M">M</button>
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="L">L</button>
+        <button class="size-btn rounded-full border border-fog px-2.5 py-1 font-mono text-[10px]" data-size="XL">XL</button>
+      </div>
+      <button class="add-btn mt-3 rounded-full bg-ink py-2.5 font-mono text-[10px] uppercase tracking-tech text-bone hover:opacity-80">Comprar Ahora</button>
+    </article>
+  </div>
+</section>
+
+<!-- ═══ TICKER 2 ═══ -->
+<div class="marquee overflow-hidden border-y border-line bg-ink py-3 text-bone">
+  <div class="marquee-track flex whitespace-nowrap font-mono text-xs uppercase tracking-tech">
+    <span class="pr-8">BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦&nbsp;</span>
+    <span class="pr-8" aria-hidden="true">BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦ BESTSELLERS ✦&nbsp;</span>
+  </div>
+</div>
+
+<!-- ═══ CUSTOM — ¿QUÉ ES? (R2/R3 dark industrial) ═══ -->
+<section id="custom" class="bg-ink px-4 py-20 text-bone md:px-10 md:py-28">
+  <p class="font-mono text-[10px] tracking-tech text-bone/50">[ 003 ] — SERVICIO DE PERSONALIZACIÓN URBANA</p>
+  <h2 class="mt-2 font-display text-4xl font-extrabold uppercase tracking-mega md:text-7xl">CUSTOM — ¿QUÉ es?</h2>
+
+  <div class="mt-12 grid gap-10 md:grid-cols-2">
+    <div>
+      <p class="max-w-md text-sm leading-relaxed text-bone/70">
+        Transformamos prendas base en piezas únicas mediante serigrafía artesanal, bordado 3D, tinte industrial y pintura a mano.
+        Trae tu prenda o elige una del rack: nuestro taller la interviene en 72 horas con garantía de irrepetibilidad.
+      </p>
+      <ul class="mt-6 space-y-2 font-mono text-xs uppercase tracking-tech text-bone/60">
+        <li>→ Serigrafía artesanal</li>
+        <li>→ Bordado 3D</li>
+        <li>→ Tinte industrial / acid wash</li>
+        <li>→ Pintura a mano + lote único</li>
+      </ul>
+      <a href="#contacto" data-magnetic class="mt-8 inline-flex items-center gap-2 rounded-full bg-bone px-6 py-3 font-mono text-xs uppercase tracking-tech text-ink">Crear mi custom ↗</a>
+
+      <!-- ABOUT (R2) -->
+      <div id="nosotros" class="mt-14 border-t border-line pt-6">
+        <p class="font-mono text-[10px] tracking-tech text-bone/50">ABOUT THE BRAND</p>
+        <p class="mt-3 max-w-md text-sm text-bone/60">
+          REVO STORE nace en Madrid en 2024 como colectivo de customización. Hoy es una marca de siluetas honestas y lotes limitados.
+          Sin temporadas, sin stock infinito: cada drop es un documento de la calle. <em class="font-display not-italic text-bone">create your own unique look.</em>
+        </p>
+      </div>
+    </div>
+
+    <!-- COMPARADOR ANTES / DESPUÉS -->
+    <div id="ba-wrap" class="relative aspect-[4/5] overflow-hidden rounded-card border border-line" style="--pos:50%">
+      <img src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy"
+        alt="Prenda antes de personalizar, blanco crudo" class="absolute inset-0 h-full w-full object-cover" style="filter:grayscale(1) brightness(1.55)"
+        onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <img src="https://images.unsplash.com/photo-1503341504253-dff4815485f1?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy"
+        alt="Prenda después de personalizar, custom gothic" class="ba-after absolute inset-0 h-full w-full object-cover" style="filter:grayscale(1) contrast(1.3) brightness(0.75)"
+        onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <div class="ba-handle pointer-events-none absolute inset-y-0 w-[2px] bg-bone" style="left:var(--pos)">
+        <span class="absolute left-1/2 top-1/2 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-bone bg-ink font-mono text-xs">↔</span>
+      </div>
+      <span class="absolute left-3 top-3 rounded-full bg-bone px-3 py-1 font-mono text-[10px] uppercase text-ink">Blanco crudo</span>
+      <span class="absolute right-3 top-3 rounded-full bg-ink px-3 py-1 font-mono text-[10px] uppercase text-bone border border-line">Custom gothic</span>
+      <input id="ba-range" type="range" min="0" max="100" value="50" aria-label="Comparador antes y después" class="absolute inset-0 h-full w-full cursor-ew-resize opacity-0">
+    </div>
+  </div>
+
+  <!-- RACK HORIZONTAL SNAP -->
+  <h3 class="mt-16 font-mono text-[10px] tracking-tech text-bone/50">RACK — PIEZAS ÚNICAS [ DESLIZA ]</h3>
+  <div class="mt-4 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4">
+    <figure class="w-60 shrink-0 snap-center md:w-72">
+      <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy" alt="Chaqueta techwear customizada" class="h-80 w-full rounded-card object-cover" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <figcaption class="mt-2 font-mono text-[10px] text-bone/50">[ LOT-011 ] — TECHWEAR PAINT</figcaption>
+    </figure>
+    <figure class="w-60 shrink-0 snap-center md:w-72">
+      <img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy" alt="Hoodie con serigrafía gótica" class="h-80 w-full rounded-card object-cover" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <figcaption class="mt-2 font-mono text-[10px] text-bone/50">[ LOT-014 ] — GOTHIC HOODIE</figcaption>
+    </figure>
+    <figure class="w-60 shrink-0 snap-center md:w-72">
+      <img src="https://images.unsplash.com/photo-1551028719-00167b16eac5?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy" alt="Bomber de cuero intervenida" class="h-80 w-full rounded-card object-cover" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <figcaption class="mt-2 font-mono text-[10px] text-bone/50">[ LOT-021 ] — LEATHER ACID</figcaption>
+    </figure>
+    <figure class="w-60 shrink-0 snap-center md:w-72">
+      <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&amp;w=1200&amp;auto=format&amp;fit=crop" loading="lazy" alt="Rack de prendas en taller" class="h-80 w-full rounded-card object-cover" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&amp;w=1200&amp;auto=format&amp;fit=crop'">
+      <figcaption class="mt-2 font-mono text-[10px] text-bone/50">[ LOT-030 ] — TALLER MADRID</figcaption>
+    </figure>
+  </div>
+</section>
+</main>
+
+<!-- ═══ FOOTER + NEWSLETTER ═══ -->
+<footer id="contacto" class="border-t border-line bg-ink px-4 pb-28 pt-16 text-bone md:px-10 md:pb-10">
+  <div class="grid gap-10 md:grid-cols-2">
+    <div>
+      <p class="font-display text-3xl font-extrabold uppercase tracking-mega md:text-5xl">Únete al drop exclusivo</p>
+      <form id="newsletter-form" class="mt-6 flex max-w-md items-end gap-3">
+        <label class="flex-1">
+          <span class="font-mono text-[10px] tracking-tech text-bone/50">TU EMAIL</span>
+          <input type="email" required placeholder="correo@ejemplo.com" class="mt-1 w-full border-b border-line bg-transparent pb-2 font-mono text-sm placeholder:text-bone/30 focus:border-bone focus:outline-none">
+        </label>
+        <button type="submit" data-magnetic class="rounded-full bg-bone px-6 py-3 font-mono text-xs uppercase tracking-tech text-ink">Unirme al drop [ ✦ ]</button>
+      </form>
+    </div>
+    <div class="grid grid-cols-2 gap-8 font-mono text-xs text-bone/60 md:justify-items-end">
+      <nav class="space-y-2" aria-label="Navegación de pie">
+        <p class="text-bone/40">NAVEGACIÓN</p>
+        <a href="#bestsellers" class="block hover:text-bone">Catálogo</a>
+        <a href="#custom" class="block hover:text-bone">Custom</a>
+        <a href="#nosotros" class="block hover:text-bone">Nosotros</a>
+      </nav>
+      <nav class="space-y-2" aria-label="Legal y redes">
+        <p class="text-bone/40">LEGAL / SOCIAL</p>
+        <a href="#" class="block hover:text-bone">Privacidad</a>
+        <a href="#" class="block hover:text-bone">Términos</a>
+        <a href="#" class="block hover:text-bone">Instagram ↗</a>
+        <a href="#" class="block hover:text-bone">TikTok ↗</a>
+      </nav>
+    </div>
+  </div>
+  <div class="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 font-mono text-[10px] text-bone/40">
+    <span>© 2026 REVO STORE. TODOS LOS DERECHOS RESERVADOS.</span>
+    <span>[ HECHO EN MADRID — LOTE 003.201 ]</span>
+  </div>
+</footer>
+
+<!-- ═══ CARRITO DRAWER ═══ -->
+<div id="cart-overlay" class="pointer-events-none fixed inset-0 z-[70] bg-ink/50 opacity-0 transition-opacity duration-300"></div>
+<aside id="cart-drawer" role="dialog" aria-modal="true" aria-label="Cesta de compra"
+  class="fixed right-0 top-0 z-[80] flex h-full w-full max-w-md translate-x-full flex-col border-l border-fog bg-bone transition-transform duration-500">
+  <div class="flex items-center justify-between border-b border-fog p-5">
+    <p class="font-display text-lg font-extrabold uppercase">Tu cesta <span id="cart-head-count" class="font-mono text-xs text-ink/50">[ 0 ]</span></p>
+    <button id="cart-close" aria-label="Cerrar cesta" class="grid h-10 w-10 place-items-center rounded-full border border-fog"><i data-lucide="x" class="h-5 w-5"></i></button>
+  </div>
+  <div class="border-b border-fog p-5">
+    <div class="h-1 w-full overflow-hidden rounded-full bg-fog"><div id="ship-bar" class="h-full bg-ink" style="width:0%"></div></div>
+    <p id="ship-label" class="mt-2 font-mono text-[10px] text-ink/50">TE FALTAN 150,00 € PARA ENVÍO GRATIS</p>
+  </div>
+  <div id="cart-items" class="flex-1 space-y-3 overflow-y-auto p-5"></div>
+  <div class="border-t border-fog p-5">
+    <div class="flex items-center justify-between font-mono text-sm"><span class="uppercase">Total</span><span id="cart-total">0,00 €</span></div>
+    <button class="mt-4 w-full rounded-full bg-ink py-4 font-mono text-xs uppercase tracking-tech text-bone hover:opacity-80">Finalizar compra [ → ]</button>
+    <p class="mt-3 text-center font-mono text-[10px] text-ink/40">[ PAGO SEGURO — ENVÍOS 24/72H ]</p>
+  </div>
+</aside>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toast" class="pointer-events-none fixed bottom-6 left-1/2 z-[90] -translate-x-1/2 rounded-full bg-ink px-5 py-3 font-mono text-xs text-bone opacity-0"></div>
+
+<!-- ═══ TAB-BAR MOBILE (R4 estilo iOS) ═══ -->
+<nav id="tabbar" class="fixed inset-x-0 bottom-0 z-[60] grid grid-cols-4 border-t border-fog bg-bone/90 backdrop-blur md:hidden" style="padding-bottom:env(safe-area-inset-bottom)" aria-label="Navegación inferior">
+  <button data-go="top" class="grid h-14 place-items-center" aria-label="Ir arriba"><i data-lucide="home" class="h-5 w-5"></i></button>
+  <button data-go="catalog" class="grid h-14 place-items-center" aria-label="Ver catálogo"><i data-lucide="search" class="h-5 w-5"></i></button>
+  <button data-go="cart" class="grid h-14 place-items-center" aria-label="Abrir cesta"><i data-lucide="shopping-bag" class="h-5 w-5"></i></button>
+  <button data-go="contact" class="grid h-14 place-items-center" aria-label="Contacto"><i data-lucide="user" class="h-5 w-5"></i></button>
+</nav>
+
+<!-- ═══════════════════ JS CLÁSICO · CONTRATO window.REVO ═══════════════════ -->
+<script>
+'use strict';
+/* ── 0 · Utilidades ── */
+const $  = (s, c = document) => c.querySelector(s);
+const $$ = (s, c = document) => [...c.querySelectorAll(s)];
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const EUR = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' });
+const sm   = x => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
+const bell = (p, a, b) => { const m = (a + b) / 2; return p < m ? sm((p - a) / (m - a)) : 1 - sm((p - m) / (b - m)); };
+const step = (p, a, b) => sm((p - a) / (b - a));
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+window.REVO = {};
+
+/* ── 1 · Lenis + GSAP sync (patrón obligatorio) ── */
+gsap.registerPlugin(ScrollTrigger);
+let lenis = null;
+if (window.Lenis && !REDUCED) {
+  lenis = new Lenis({ lerp: 0.1, smoothWheel: true });
+  lenis.on('scroll', ScrollTrigger.update);
+  gsap.ticker.add(t => lenis.raf(t * 1000));
+  gsap.ticker.lagSmoothing(0);
+}
+
+/* ── 2 · Loader con contador ── */
+(function initLoader() {
+  const loader = $('#loader'), pct = $('#loader-pct');
+  const kill = () => { if (loader && loader.parentNode) loader.remove(); ScrollTrigger.refresh(); };
+  if (REDUCED) { kill(); return; }
+  const o = { v: 0 };
+  gsap.to(o, { v: 100, duration: 1.3, ease: 'power2.inOut',
+    onUpdate: () => { pct.textContent = Math.round(o.v) + '%'; },
+    onComplete: () => gsap.to(loader, { yPercent: -100, duration: .8, ease: 'power3.inOut', onComplete: kill }) });
+  setTimeout(kill, 4500); /* red de seguridad */
+})();
+
+/* ── 3 · Carrito: estado + persistencia + render ── */
+REVO.cart = {
+  items: [],
+  load()  { try { this.items = JSON.parse(localStorage.getItem('revo:cart:v1')) || []; } catch (e) { this.items = []; } },
+  save()  { localStorage.setItem('revo:cart:v1', JSON.stringify(this.items)); },
+  add(p)  { const key = `${p.id}|${p.size}|${p.color}`; const f = this.items.find(i => i.key === key);
+            if (f) f.qty++; else this.items.push({ ...p, key, qty: 1 });
+            this.save(); renderCart(); },
+  setQty(key, d) { const f = this.items.find(i => i.key === key); if (!f) return;
+            f.qty += d; if (f.qty <= 0) this.items = this.items.filter(i => i.key !== key);
+            this.save(); renderCart(); },
+  remove(key) { this.items = this.items.filter(i => i.key !== key); this.save(); renderCart(); },
+  count() { return this.items.reduce((a, i) => a + i.qty, 0); },
+  total() { return this.items.reduce((a, i) => a + i.qty * i.price, 0); }
+};
+
+function renderCart() {
+  const box = $('#cart-items');
+  $('#cart-count').textContent = REVO.cart.count();
+  $('#cart-head-count').textContent = `[ ${REVO.cart.count()} ]`;
+  if (!REVO.cart.items.length) {
+    box.innerHTML = '<p class="font-mono text-xs text-ink/50">[ CESTA VACÍA — AÑADE TU PRIMERA PRENDA ]</p>';
+  } else {
+    box.innerHTML = REVO.cart.items.map(i => `
+      <div class="flex gap-3 rounded-2xl border border-fog bg-white p-3" data-key="${i.key}">
+        <img src="${i.img}" alt="" class="h-20 w-16 rounded-xl object-cover">
+        <div class="flex-1">
+          <p class="font-display text-sm font-extrabold uppercase">${i.name}</p>
+          <p class="font-mono text-[10px] text-ink/50">[ REV-${i.id} ] · ${i.size} · ${i.color.toUpperCase()}</p>
+          <div class="mt-2 flex items-center gap-2 font-mono text-xs">
+            <button data-action="dec" class="grid h-6 w-6 place-items-center rounded-full border border-fog" aria-label="Restar unidad">−</button>
+            <span>${i.qty}</span>
+            <button data-action="inc" class="grid h-6 w-6 place-items-center rounded-full border border-fog" aria-label="Sumar unidad">+</button>
+            <button data-action="del" class="ml-auto text-ink/40 hover:text-ink" aria-label="Eliminar artículo"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+          </div>
+        </div>
+        <p class="font-mono text-xs">${EUR.format(i.price * i.qty)}</p>
+      </div>`).join('');
+    lucide.createIcons();
+  }
+  $('#cart-total').textContent = EUR.format(REVO.cart.total());
+  const t = REVO.cart.total();
+  $('#ship-bar').style.width = Math.min(t / 150 * 100, 100) + '%';
+  $('#ship-label').textContent = t >= 150 ? 'ENVÍO GRATIS DESBLOQUEADO ✦' : `TE FALTAN ${EUR.format(150 - t)} PARA ENVÍO GRATIS`;
+}
+
+$('#cart-items').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-action]'); if (!btn) return;
+  const key = btn.closest('[data-key]').dataset.key;
+  if (btn.dataset.action === 'inc') REVO.cart.setQty(key, 1);
+  else if (btn.dataset.action === 'dec') REVO.cart.setQty(key, -1);
+  else REVO.cart.remove(key);
+});
+
+/* ── 4 · Drawer abrir/cerrar (foco + Lenis stop) ── */
+let lastFocus = null;
+function openCart() {
+  lastFocus = document.activeElement;
+  $('#cart-drawer').classList.remove('translate-x-full');
+  $('#cart-overlay').classList.remove('opacity-0', 'pointer-events-none');
+  document.body.classList.add('no-scroll'); if (lenis) lenis.stop();
+  $('#cart-close').focus();
+}
+function closeCart() {
+  $('#cart-drawer').classList.add('translate-x-full');
+  $('#cart-overlay').classList.add('opacity-0', 'pointer-events-none');
+  document.body.classList.remove('no-scroll'); if (lenis) lenis.start();
+  if (lastFocus) lastFocus.focus();
+}
+REVO.openCart = openCart; REVO.closeCart = closeCart;
+$('#cart-open').addEventListener('click', openCart);
+$('#cart-close').addEventListener('click', closeCart);
+$('#cart-overlay').addEventListener('click', closeCart);
+
+/* ── 5 · Menú mobile ── */
+function openMenu() {
+  $('#mobile-menu').classList.remove('-translate-y-full');
+  document.body.classList.add('no-scroll'); if (lenis) lenis.stop();
+  gsap.fromTo('#mobile-menu a', { y: 40, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, stagger: .06, ease: 'power2.out', delay: .1 });
+}
+function closeMenu() {
+  $('#mobile-menu').classList.add('-translate-y-full');
+  document.body.classList.remove('no-scroll'); if (lenis) lenis.start();
+}
+$('#menu-open').addEventListener('click', openMenu);
+$('#menu-close').addEventListener('click', closeMenu);
+$$('#mobile-menu a').forEach(a => a.addEventListener('click', closeMenu));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeCart(); closeMenu(); } });
+
+/* ── 6 · Toast ── */
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg;
+  gsap.killTweensOf(t);
+  gsap.fromTo(t, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .35, ease: 'power2.out',
+    onComplete: () => gsap.to(t, { opacity: 0, y: 8, delay: 1.6, duration: .3 }) });
+}
+
+/* ── 7 · Variantes (delegación) + añadir al carrito ── */
+const COLOR_FILTERS = { negro: 'none', humo: 'grayscale(1) brightness(1.25)', hueso: 'grayscale(1) brightness(1.7)', oliva: 'sepia(.35) saturate(1.2) hue-rotate(40deg)' };
+$('#bestsellers').addEventListener('click', e => {
+  const card = e.target.closest('.product-card'); if (!card) return;
+  const sw = e.target.closest('.swatch'), sz = e.target.closest('.size-btn'), add = e.target.closest('.add-btn');
+  if (sw) {
+    $$('.swatch', card).forEach(b => b.classList.toggle('is-active', b === sw));
+    $('.product-img', card).style.filter = COLOR_FILTERS[sw.dataset.color] || 'none';
+  } else if (sz) {
+    $$('.size-btn', card).forEach(b => b.classList.toggle('is-active', b === sz));
+  } else if (add) {
+    const size  = ($('.size-btn.is-active', card) || {}).dataset?.size || 'ÚNICA';
+    const color = ($('.swatch.is-active', card) || {}).dataset?.color || 'negro';
+    REVO.cart.add({ id: card.dataset.id, name: card.dataset.name, price: +card.dataset.price, size, color, img: $('.product-img', card).src });
+    toast(`AÑADIDO — ${card.dataset.name.toUpperCase()} [ ${size} / ${color.toUpperCase()} ]`);
+    gsap.fromTo('#cart-open', { scale: 1 }, { scale: 1.18, duration: .15, yoyo: true, repeat: 1 });
+  }
+});
+
+/* ── 8 · Buscador que filtra la grid ── */
+$('#search-input').addEventListener('input', e => {
+  const q = norm(e.target.value.trim());
+  $$('.product-card').forEach(c => c.classList.toggle('hidden', !!q && !norm(c.dataset.name).includes(q)));
+});
+
+/* ── 9 · Hover magnético ── */
+if (!REDUCED && matchMedia('(pointer:fine)').matches) {
+  $$('[data-magnetic]').forEach(el => {
+    const x = gsap.quickTo(el, 'x', { duration: .3, ease: 'power2.out' });
+    const y = gsap.quickTo(el, 'y', { duration: .3, ease: 'power2.out' });
+    el.addEventListener('mousemove', ev => {
+      const r = el.getBoundingClientRect();
+      x((ev.clientX - r.left - r.width / 2) * .35); y((ev.clientY - r.top - r.height / 2) * .35);
+    });
+    el.addEventListener('mouseleave', () => { x(0); y(0); });
+  });
+}
+
+/* ── 10 · Parallax [data-speed] ── */
+if (!REDUCED) {
+  gsap.utils.toArray('[data-speed]').forEach(el => {
+    const s = parseFloat(el.dataset.speed);
+    gsap.to(el, { yPercent: (1 - s) * 30, ease: 'none',
+      scrollTrigger: { trigger: el.parentElement, start: 'top bottom', end: 'bottom top', scrub: true } });
+  });
+}
+
+/* ── 11 · SCROLLYTELLING CANVAS (procedural, sin assets) ── */
+(function initScrolly() {
+  const canvas = $('#scrolly-canvas'), ctx = canvas.getContext('2d');
+  const hud = $('#frame-hud'), bar = $('#scrolly-bar'), stepsEls = $$('.scrolly-step');
+  let dpr = 1;
+  function fit() { dpr = Math.min(devicePixelRatio || 1, 2); canvas.width = canvas.clientWidth * dpr; canvas.height = canvas.clientHeight * dpr; }
+  addEventListener('resize', fit); fit();
+
+  /* Hook opcional para frames reales precargados: const FRAME_URLS = []; */
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+  const FILL = '#161616', LINE = 'rgba(245,245,247,0.9)';
+
+  REVO.renderFrame = p => {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    /* rejilla técnica de fondo */
+    ctx.strokeStyle = 'rgba(245,245,247,0.05)'; ctx.lineWidth = 1; ctx.beginPath();
+    const g = 44 * dpr;
+    for (let x = 0; x < W; x += g) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let y = 0; y < H; y += g) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+
+    const u = Math.min(W, H) / 780;
+    const angle = p * Math.PI * 2;
+    let cx = Math.cos(angle); const sgn = cx < 0 ? -1 : 1; cx = sgn * Math.max(Math.abs(cx), .12);
+    const ex = bell(p, .2, .45);        /* despiece */
+    const pr = step(p, .45, .55);       /* print */
+    const sc = bell(p, .45, .7);        /* scanlines */
+    const orb = bell(p, .42, .78);      /* swatches orbitando */
+    const zoom = 1 + step(p, .9, 1) * .28;
+
+    ctx.save(); ctx.translate(W / 2, H * .54); ctx.scale(u * zoom, u * zoom); ctx.scale(cx, 1);
+    ctx.lineWidth = 2; ctx.strokeStyle = LINE; ctx.fillStyle = FILL;
+    /* mangas */
+    rr(-172 - 80 * ex, -95, 64, 190, 32); ctx.fill(); ctx.stroke();
+    rr(108 + 80 * ex, -95, 64, 190, 32); ctx.fill(); ctx.stroke();
+    /* torso + bajo */
+    rr(-105, -115, 210, 245, 44); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0d0d0d'; rr(-105, 116, 210, 20, 10); ctx.fill(); ctx.stroke();
+    /* capucha */
+    const dyH = -120 * ex;
+    ctx.fillStyle = FILL; ctx.beginPath(); ctx.ellipse(0, -140 + dyH, 74, 62, 0, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#050505'; ctx.beginPath(); ctx.ellipse(0, -128 + dyH, 44, 32, 0, 0, 7); ctx.fill();
+    /* cordones */
+    const dyS = -60 * ex;
+    ctx.strokeStyle = LINE; ctx.lineWidth = 3; ctx.beginPath();
+    ctx.moveTo(-14, -96 + dyS); ctx.lineTo(-20, -50 + dyS);
+    ctx.moveTo(14, -96 + dyS); ctx.lineTo(20, -50 + dyS); ctx.stroke();
+    /* bolsillo */
+    ctx.fillStyle = FILL; ctx.lineWidth = 2; rr(-62, 58 + 110 * ex, 124, 72, 20); ctx.fill(); ctx.stroke();
+    /* print gótico REVO✦ */
+    if (pr > 0) {
+      ctx.fillStyle = `rgba(245,245,247,${pr})`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '800 46px Syne, sans-serif'; ctx.fillText('REVO', 0, -14);
+      ctx.font = '26px sans-serif'; ctx.fillText('✦', 0, 26);
+    }
+    /* scanlines durante la fase custom */
+    if (sc > 0) {
+      ctx.save(); ctx.globalAlpha = sc * .35; ctx.strokeStyle = '#F5F5F7'; ctx.lineWidth = 1; ctx.beginPath();
+      for (let y = -60; y < 60; y += 8) { ctx.moveTo(-90, y); ctx.lineTo(90, y); }
+      ctx.stroke(); ctx.restore();
+    }
+    ctx.restore();
+
+    /* swatches orbitando en espacio de pantalla */
+    if (orb > 0) {
+      const cols = ['#F5F5F7', '#9CA3AF', '#5B6147', '#222222'];
+      for (let i = 0; i < 4; i++) {
+        const a = p * Math.PI * 4 + i * Math.PI / 2;
+        const rx = Math.min(W, H) * .38;
+        const x = W / 2 + Math.cos(a) * rx, y = H * .54 + Math.sin(a) * rx * .42;
+        ctx.globalAlpha = orb; ctx.beginPath(); ctx.arc(x, y, 9 * dpr, 0, 7);
+        ctx.fillStyle = cols[i]; ctx.fill(); ctx.strokeStyle = 'rgba(245,245,247,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    /* HUD + barra + steps */
+    hud.textContent = `FRAME ${String(Math.round(p * 120)).padStart(3, '0')}/120 — ${Math.round(p * 100)}%`;
+    bar.style.width = (p * 100) + '%';
+    const idx = p < .2 ? 0 : p < .45 ? 1 : p < .7 ? 2 : p < .9 ? 3 : 4;
+    stepsEls.forEach((el, i) => el.classList.toggle('is-active', i === idx));
+  };
+
+  const END = innerWidth < 768 ? 2500 : 4000;
+  ScrollTrigger.create({ trigger: '#scrolly', start: 'top top', end: '+=' + END, pin: true, scrub: 1, anticipatePin: 1,
+    onUpdate: s => REVO.renderFrame(s.progress) });
+  REVO.renderFrame(0);
+})();
+
+/* ── 12 · Comparador antes/después ── */
+$('#ba-range').addEventListener('input', e => $('#ba-wrap').style.setProperty('--pos', e.target.value + '%'));
+
+/* ── 13 · Newsletter ── */
+$('#newsletter-form').addEventListener('submit', e => {
+  e.preventDefault();
+  e.target.innerHTML = '<p class="font-mono text-xs text-bone">✓ SUSCRITO AL DROP — [ REV-2026 ] REVISA TU CORREO.</p>';
+  toast('SUSCRIPCIÓN CONFIRMADA ✦');
+});
+
+/* ── 14 · Anclas suaves con Lenis + tab-bar ── */
+$$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+  const sel = a.getAttribute('href'); if (sel.length < 2) return;
+  const t = $(sel); if (!t) return;
+  e.preventDefault();
+  if (lenis) lenis.scrollTo(t, { offset: -70 }); else t.scrollIntoView({ behavior: 'smooth' });
+  closeMenu();
+}));
+$('#tabbar').addEventListener('click', e => {
+  const b = e.target.closest('button[data-go]'); if (!b) return;
+  const go = b.dataset.go;
+  if (go === 'cart') openCart();
+  else if (go === 'top') lenis ? lenis.scrollTo(0) : scrollTo({ top: 0, behavior: 'smooth' });
+  else { const t = $(go === 'catalog' ? '#bestsellers' : '#contacto');
+         if (lenis) lenis.scrollTo(t, { offset: -70 }); else t.scrollIntoView({ behavior: 'smooth' }); }
+});
+
+/* ── 15 · Refresh de ScrollTrigger tras carga/fuentes ── */
+addEventListener('load', () => ScrollTrigger.refresh());
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => ScrollTrigger.refresh());
+
+/* ── 16 · Arranque ── */
+REVO.cart.load();
+renderCart();
+lucide.createIcons();
+</script>
+
+<!-- ═══════════════════ VISOR 3D · THREE.JS (module) ═══════════════════ -->
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const el = document.getElementById('hero-3d');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FALLBACK = '<img src="https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=1200&auto=format&fit=crop" alt="REVO Hoodie 3D" class="h-full w-full rounded-2xl object-cover">';
+
+try {
+  /* Renderer */
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(el.clientWidth, el.clientHeight, false);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  el.appendChild(renderer.domElement);
+
+  /* Escena y cámara */
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, el.clientWidth / el.clientHeight, .1, 100);
+  camera.position.set(0, .4, 5.8);
+
+  /* Print REVO✦ como CanvasTexture (regenerada al cargar Syne) */
+  const printCanvas = document.createElement('canvas'); printCanvas.width = printCanvas.height = 256;
+  function paintPrint() {
+    const x = printCanvas.getContext('2d');
+    x.clearRect(0, 0, 256, 256);
+    x.fillStyle = '#F5F5F7'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '800 78px Syne, sans-serif'; x.fillText('REVO', 128, 108);
+    x.font = '44px sans-serif'; x.fillText('✦', 128, 178);
+  }
+  paintPrint();
+  const printTex = new THREE.CanvasTexture(printCanvas);
+  printTex.colorSpace = THREE.SRGBColorSpace;
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { paintPrint(); printTex.needsUpdate = true; });
+
+  /* Grupo hoodie: torso, capucha, mangas, bolsillo, print, cordones */
+  const mat = new THREE.MeshStandardMaterial({ color: 0x141414, roughness: .55, metalness: .2 });
+  const group = new THREE.Group();
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(.9, 1.4, 6, 24), mat);
+  const hood  = new THREE.Mesh(new THREE.SphereGeometry(.62, 24, 16, 0, Math.PI * 2, 0, Math.PI * .62), mat);
+  hood.position.y = 1.15;
+  const sleeveL = new THREE.Mesh(new THREE.CapsuleGeometry(.32, 1.5, 6, 16), mat);
+  sleeveL.position.set(-1.15, -.1, 0); sleeveL.rotation.z = .35;
+  const sleeveR = sleeveL.clone(); sleeveR.position.x = 1.15; sleeveR.rotation.z = -.35;
+  const pocket = new THREE.Mesh(new THREE.BoxGeometry(.9, .5, .12), mat);
+  pocket.position.set(0, -.55, .82);
+  const print = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.1),
+    new THREE.MeshBasicMaterial({ map: printTex, transparent: true }));
+  print.position.set(0, .15, .93);
+  const strMat = new THREE.MeshStandardMaterial({ color: 0xF5F5F7, roughness: .8 });
+  const strL = new THREE.Mesh(new THREE.CylinderGeometry(.015, .015, .5), strMat);
+  strL.position.set(-.12, .75, .88);
+  const strR = strL.clone(); strR.position.x = .12;
+  [torso, hood, sleeveL, sleeveR, pocket].forEach(m => { m.castShadow = true; group.add(m); });
+  group.add(print, strL, strR);
+  scene.add(group);
+
+  /* Suelo con sombra de contacto */
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(3, 40), new THREE.ShadowMaterial({ opacity: .25 }));
+  ground.rotation.x = -Math.PI / 2; ground.position.y = -1.9; ground.receiveShadow = true;
+  scene.add(ground);
+
+  /* Iluminación de estudio */
+  scene.add(new THREE.AmbientLight(0xffffff, .5));
+  const key = new THREE.DirectionalLight(0xffffff, 1.4);
+  key.position.set(2.5, 4, 3); key.castShadow = true; key.shadow.mapSize.set(1024, 1024);
+  scene.add(key);
+  const rim = new THREE.DirectionalLight(0xffffff, .8);
+  rim.position.set(-3, 2, -4); scene.add(rim);
+
+  /* Controles: arrastrar para rotar + auto-rotación */
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableZoom = false; controls.enablePan = false;
+  controls.autoRotate = !reduced; controls.autoRotateSpeed = 1.4;
+  controls.enableDamping = true; controls.dampingFactor = .06; controls.rotateSpeed = .6;
+
+  /* Resize */
+  new ResizeObserver(() => {
+    renderer.setSize(el.clientWidth, el.clientHeight, false);
+    camera.aspect = el.clientWidth / el.clientHeight; camera.updateProjectionMatrix();
+  }).observe(el);
+
+  /* Loop con flotación */
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => {
+    const t = clock.getElapsedTime();
+    group.position.y = reduced ? 0 : Math.sin(t * .8) * .06;
+    controls.update();
+    renderer.render(scene, camera);
+  });
+} catch (err) {
+  console.warn('WebGL no disponible, usando fallback:', err);
+  el.innerHTML = FALLBACK;
+}
+</script>
+</body>
+</html>
